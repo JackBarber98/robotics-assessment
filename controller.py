@@ -1,41 +1,63 @@
 import rospy
 import numpy as np 
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Int32
+from std_msgs.msg import String
+
+# main statement to control individual nodes. Use class members to access variables
 
 class Controller:
     def __init__(self):
         rospy.init_node("controller")
+        self.corner_examinder_publisher = rospy.Publisher("/corner_examiner", String, queue_size=1)
 
-        #self.corner_examinder_subscriber = rospy.Subscriber("/corner_examiner", String, self.examiner_callback)
-        rate = rospy.Rate(10)
-        self.corner_examinder_publisher = rospy.Publisher("/corner_examiner", Int32, queue_size=1)
-        self.corner_examinder_publisher.publish(3)
-        self.laser_subscriber = rospy.Subscriber("/scan", LaserScan, self.callback)
+        self.laser_subscriber = rospy.Subscriber("/scan", LaserScan, self.laser_callback)
+        self.odom_subscriber = rospy.Subscriber("/odom", Odometry, self.odom_callback)
         self.twist_publisher = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size=1)
 
-    def callback(self, laser_data):
+        self.left_third = []
+        self.middle_third = []
+        self.right_third = []
+
+        self.odom = []
+
+        #rospy.on_shutdown(self.shutdown)
+
+    def laser_callback(self, laser_data):
+        self.left_third = np.array(laser_data.ranges)[ : len(laser_data.ranges) / 3]
+        self.middle_third = np.array(laser_data.ranges)[len(laser_data.ranges) / 3 : 2 * len(laser_data.ranges) / 3]
+        self.right_third = np.array(laser_data.ranges)[2 * len(laser_data.ranges) / 3 : ]
+
+    def odom_callback(self, odom_data):
+        self.odom = odom_data
+
+    def get_forward_distance(self):
+        return np.nanmean(self.middle_third)
+
+    def get_distance_right(self):
+        return np.less(self.right_third, 0.7).any()
+
+    def forward(self):
         twist = Twist()
         twist.linear.x = 0.2
-
-        left_third = np.array(laser_data.ranges)[ : len(laser_data.ranges) / 3]
-        middle_third = np.array(laser_data.ranges)[len(laser_data.ranges) / 3 : 2 * len(laser_data.ranges) / 3]
-        right_third = np.array(laser_data.ranges)[2 * len(laser_data.ranges) / 3 : ]
-
-        # if np.less(np.array(laser_data.ranges), 0.5).any():
-        #     twist.linear.x = 0
-        #     twist.angular.z = -1
-        if np.less(np.array(laser_data.ranges), 0.7).any():
-            print("examining that corner..")
-            self.corner_examinder_publisher.publish("Examine that corner")
         self.twist_publisher.publish(twist)
 
-    def examiner_callback(self, data):
-        pass
+    def turn_round(self):
+        # twist = Twist()
+        # twist.angular.z = np.pi
+        # self.twist_publisher.publish(twist)
+        print(self.odom)
+
+    def left(self):
+        twist = Twist()
+        twist.angular.z = -1
+        self.twist_publisher.publish(twist)
+    
+    def right(self):
+        twist = Twist()
+        twist.angular.z = 1
+        self.twist_publisher.publish(twist)
 
     def run(self):
         rospy.spin()
-
-c = Controller()
-c.run()
