@@ -1,26 +1,27 @@
 import rospy
+import math
 import numpy as np 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 
 from controller import Controller
-from corner_examiner import CornerExaminer
 
 def solve():
     controller = Controller()
 
-    turning_around = False
+    turn_left = False
 
     while not rospy.is_shutdown():
-        if not turning_around:
-            if controller.get_forward_distance() < 0.7:
-                turning_around = True
-            else:
-                controller.forward()
+        controller.forward()
 
-        else:
-            print()
-            #controller.turn_round()
+        if not np.less(controller.get_shortest_distance(), 0.5).any():
+            print(controller.get_distance_left())
+            if controller.get_distance_left() < controller.get_distance_right():
+                print("go right")
+                controller.right()
+            elif controller.get_distance_left() > controller.get_distance_right():
+                print("go left")
+                controller.left()
 
 solve()

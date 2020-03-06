@@ -19,43 +19,50 @@ class Controller:
         self.left_third = []
         self.middle_third = []
         self.right_third = []
+        self.laser_data = []
 
         self.odom = []
 
-        #rospy.on_shutdown(self.shutdown)
-
     def laser_callback(self, laser_data):
-        self.left_third = np.array(laser_data.ranges)[ : len(laser_data.ranges) / 3]
+        self.laser_data = laser_data
+        self.left_third = np.array(laser_data.ranges)[  : len(laser_data.ranges) / 3]
         self.middle_third = np.array(laser_data.ranges)[len(laser_data.ranges) / 3 : 2 * len(laser_data.ranges) / 3]
         self.right_third = np.array(laser_data.ranges)[2 * len(laser_data.ranges) / 3 : ]
 
     def odom_callback(self, odom_data):
-        self.odom = odom_data
+        self.odom = odom_data.pose.pose.orientation
 
     def get_forward_distance(self):
-        return np.nanmean(self.middle_third)
+        return np.less(self.middle_third, 0.5).any()
 
     def get_distance_right(self):
-        return np.less(self.right_third, 0.7).any()
+        return np.nanmean(self.right_third)
+
+    def get_distance_left(self):
+        return np.nanmean(self.left_third)
 
     def forward(self):
         twist = Twist()
-        twist.linear.x = 0.2
+        twist.linear.x = 0.1
         self.twist_publisher.publish(twist)
 
+    def get_shortest_distance(self):
+        return self.laser_data
+
     def turn_round(self):
-        # twist = Twist()
-        # twist.angular.z = np.pi
-        # self.twist_publisher.publish(twist)
-        print(self.odom)
+        twist = Twist()
+        twist.angular.z = 5
+        self.twist_publisher.publish(twist)
 
     def left(self):
         twist = Twist()
+        twist.linear.x = 0.1
         twist.angular.z = -1
         self.twist_publisher.publish(twist)
     
     def right(self):
         twist = Twist()
+        twist.linear.x = 0.1
         twist.angular.z = 1
         self.twist_publisher.publish(twist)
 
