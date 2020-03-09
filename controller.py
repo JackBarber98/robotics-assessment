@@ -5,7 +5,13 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 
-# main statement to control individual nodes. Use class members to access variables
+from cv2 import namedWindow, cvtColor, imshow
+from cv2 import destroyAllWindows, startWindowThread
+from cv2 import COLOR_BGR2GRAY, waitKey
+from cv2 import blur, Canny
+from numpy import mean
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
 
 class Controller:
     def __init__(self):
@@ -23,6 +29,9 @@ class Controller:
 
         self.odom = []
 
+        self.bridge = CvBridge()
+        self.image_sub = rospy.Subscriber("/camera/rgb/image_raw", Image, self.image_callback)
+
     def laser_callback(self, laser_data):
         self.laser_data = laser_data
         self.left_third = np.array(laser_data.ranges)[  : len(laser_data.ranges) / 3]
@@ -31,6 +40,21 @@ class Controller:
 
     def odom_callback(self, odom_data):
         self.odom = odom_data.pose.pose.orientation
+
+    def image_callback(self, image_data):
+        namedWindow("Image window")
+
+        cv_image = self.bridge.imgmsg_to_cv2(image_data, "bgr8")
+
+        gray_img = cvtColor(cv_image, COLOR_BGR2GRAY)
+        img3 = Canny(gray_img, 0, 0)
+        imshow("canny", img3)
+        imshow("normal", cv_image)
+        waitKey(1)
+
+    def is_close_to_wall(self):
+        if np.less(self.middle_third, 0.6).any() or np.less(self.left_third, 0.5).any():
+            return True
 
     def get_forward_distance(self):
         return np.less(self.middle_third, 0.5).any()
@@ -43,7 +67,7 @@ class Controller:
 
     def forward(self):
         twist = Twist()
-        twist.linear.x = 0.1
+        twist.linear.x = 0.2
         self.twist_publisher.publish(twist)
 
     def get_shortest_distance(self):
@@ -56,9 +80,9 @@ class Controller:
 
     def left(self):
         twist = Twist()
-        twist.linear.x = 0.1
-        twist.angular.z = -1
+        twist.angular.z = -1.1
         self.twist_publisher.publish(twist)
+        rospy.sleep(0.1)
     
     def right(self):
         twist = Twist()
