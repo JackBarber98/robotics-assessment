@@ -12,39 +12,32 @@ def solve():
 
     following_wall = False
     door_detected = False
+    turning_left = False
 
     while not rospy.is_shutdown():
-        #try:
         if controller.laser_minimum < 0.5 and not door_detected:
-            print("too close...") 
             if not door_detected:
-                print("and the door isn't detected")
                 following_wall = True
                 controller.stop()
-                if controller.left_laser_sum >= controller.right_laser_sum:
+                if controller.left_laser_sum >= controller.right_laser_sum or turning_left:
                     controller.turn_right()
-                else:
+                    turning_left = True
+                elif not turning_left:
                     controller.turn_left()
-            else:
-                print("and the door is detected")
         else: 
+            turning_left = False
             if following_wall:
-                if controller.laser_maximum >= 2:
+                if controller.laser_data[0] >= 1.2:
                     door_detected = True
                     following_wall = False
-                    print("door detected")
             if door_detected:
-                print("laser min: ", controller.laser_minimum)
-                if controller.laser_minimum < 0.5:
-                    print("gonna crash into wall (drifting)")
+                if controller.laser_minimum < 0.6:
+                    controller.stop()
                     door_detected = False
                 else:
-                    print("drifting...")
                     controller.drift_right()
-            elif controller.laser_minimum >= 0.5:
+            else:
                 controller.forwards()
-        # except:
-        #     controller.backwards()
         rospy.sleep(0.5)
 
 solve()

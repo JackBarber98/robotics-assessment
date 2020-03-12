@@ -20,8 +20,16 @@ class Controller:
         self.laser_maximum = 0
         self.laser_data = []
 
+        self.wheel_radius = .06
+        self.robot_radius = .2
+
     def laser_callback(self, laser_data):
         laser_data = laser_data.ranges
+
+        try:
+            np.nanargmax(laser_data)
+        except:
+            laser_data = np.zeros(np.shape(laser_data))
         
         self.left_laser_sum = 0 
         self.right_laser_sum = 0
@@ -39,8 +47,8 @@ class Controller:
         self.__twist_publisher.publish(self.__twist)
 
     def backwards(self):
-        self.__twist.angular.z = 0
-        self.__twist.linear.x = -0.1
+        self.__twist.angular.z = 0.1
+        self.__twist.linear.x = -0.2
         self.__twist_publisher.publish(self.__twist)
 
     def stop(self):
@@ -49,7 +57,7 @@ class Controller:
         self.__twist_publisher.publish(self.__twist)
 
     def turn_left(self):
-        self.__twist.angular.z = -0.5
+        self.__twist.angular.z = 0.5
         self.__twist.linear.x = 0
         self.__twist_publisher.publish(self.__twist)
 
@@ -60,7 +68,7 @@ class Controller:
 
     def drift_right(self):
         self.__twist.linear.x = 0.2
-        self.__twist.angular.z = 0.1
+        self.__twist.angular.z = 0.25
         self.__twist_publisher.publish(self.__twist)
 
     def run(self):
