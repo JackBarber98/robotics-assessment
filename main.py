@@ -14,30 +14,43 @@ def solve():
     door_detected = False
     turning_left = False
 
+    avoiding_trap = False
+
     while not rospy.is_shutdown():
-        if controller.laser_minimum < 0.5 and not door_detected:
-            if not door_detected:
-                following_wall = True
-                controller.stop()
-                if controller.left_laser_sum >= controller.right_laser_sum or turning_left:
-                    controller.turn_right()
-                    turning_left = True
-                elif not turning_left:
-                    controller.turn_left()
-        else: 
-            turning_left = False
-            if following_wall:
-                if controller.laser_data[0] >= 1.2:
-                    door_detected = True
-                    following_wall = False
-            if door_detected:
-                if controller.laser_minimum < 0.6:
+        print("trap found? ", controller.red_square_found)
+        if not avoiding_trap:
+            if controller.laser_minimum < 0.5 and not door_detected:
+                if not door_detected:
+                    following_wall = True
                     controller.stop()
-                    door_detected = False
+                    if controller.left_laser_sum >= controller.right_laser_sum or turning_left:
+                        controller.turn_right()
+                        turning_left = True
+                    elif not turning_left:
+                        controller.turn_left()
+            else: 
+                turning_left = False
+                if following_wall:
+                    if controller.laser_data[0] >= 1.2:
+                        door_detected = True
+                        following_wall = False
+                if door_detected:
+                    if controller.laser_minimum < 0.6:
+                        controller.stop()
+                        door_detected = False
+                    else:
+                        controller.drift_right()
                 else:
-                    controller.drift_right()
+                    controller.forwards()
+            
+            if controller.red_square_found:
+                avoiding_trap = True
+        else:
+            print("avoiding trap")
+            if controller.red_square_found:
+                controller.backwards()
             else:
-                controller.forwards()
+                avoiding_trap = False
         rospy.sleep(0.5)
 
 solve()
