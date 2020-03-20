@@ -15,10 +15,10 @@ def solve():
     turning_left = False
 
     avoiding_trap = False
+    going_to_exit = False
 
     while not rospy.is_shutdown():
-        print("trap found? ", controller.red_square_found)
-        if not avoiding_trap:
+        if not avoiding_trap and not going_to_exit:
             if controller.laser_minimum < 0.5 and not door_detected:
                 if not door_detected:
                     following_wall = True
@@ -45,14 +45,20 @@ def solve():
             
             if controller.red_square_found:
                 avoiding_trap = True
-        else:
+            if controller.green_square_found:
+                going_to_exit = True
+        elif avoiding_trap and not going_to_exit:
             print("avoiding trap")
-            if controller.red_square_found:
-                controller.turn_backwards()
+            if controller.left_laser_sum >= controller.right_laser_sum or turning_left:
+                controller.turn_left_backwards()
+                turning_left = True
             else:
-                controller.turn_left()
-            if controller.laser_minimum < 0.6:
+                controller.turn_right_backwards()
+            if controller.laser_minimum < 1.5 and not controller.red_square_found:
                 avoiding_trap = False
+                turning_left = False
+        else:
+            print("EXIT FOUND")
         rospy.sleep(0.5)
 
 solve()

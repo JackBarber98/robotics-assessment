@@ -52,17 +52,19 @@ class Controller:
 
     def camera_callback(self, camera_data):
         cv_image = self.__cv_bridge.imgmsg_to_cv2(camera_data, "bgr8")
-        middle_column = cv_image[:, [300, 400]]
 
-        green_mask = inRange(middle_column, (1, 130, 1), (1, 160, 1))
-        red_mask = inRange(middle_column, (1, 1, 130), (1, 1, 160))
+        green_mask = inRange(cv_image[:, [100, 400]], (1, 130, 1), (1, 160, 1))
+        red_mask = inRange(cv_image[:][400:420], (1, 1, 130), (1, 1, 160))
 
-        if 255 not in green_mask:
+        imshow("col", cv_image[:, [0, 400]])
+        imshow("main", cv_image)
+
+        if np.in1d(green_mask, 255, assume_unique=True).any():
             self.green_square_found = True
         else:
             self.green_square_found = False
 
-        if 255 in red_mask:
+        if np.in1d(red_mask, 255, assume_unique=True).any():
             self.red_square_found = True
         else:
             self.red_square_found = False
@@ -76,7 +78,7 @@ class Controller:
 
     def backwards(self):
         self.__twist.angular.z = 0
-        self.__twist.linear.x = -0.2
+        self.__twist.linear.x = -0.1
         self.__twist_publisher.publish(self.__twist)
 
     def stop(self):
@@ -99,9 +101,14 @@ class Controller:
         self.__twist.angular.z = 0.25
         self.__twist_publisher.publish(self.__twist)
 
-    def turn_backwards(self):
-        self.__twist.linear.x = -0.2
-        self.__twist.angular.z = 2
+    def turn_right_backwards(self):
+        self.__twist.linear.x = 0
+        self.__twist.angular.z = -0.5
+        self.__twist_publisher.publish(self.__twist)
+
+    def turn_left_backwards(self):
+        self.__twist.linear.x = 0
+        self.__twist.angular.z = 0.5
         self.__twist_publisher.publish(self.__twist)
 
     def run(self):
