@@ -99,5 +99,10 @@ class Controller:
         self.__twist.angular.z = 0.25
         self.__twist_publisher.publish(self.__twist)
 
+    def turn_backwards(self):
+        self.__twist.linear.x = -0.2
+        self.__twist.angular.z = 2
+        self.__twist_publisher.publish(self.__twist)
+
     def run(self):
         rospy.spin()

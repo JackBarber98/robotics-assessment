@@ -48,8 +48,10 @@ def solve():
         else:
             print("avoiding trap")
             if controller.red_square_found:
-                controller.backwards()
+                controller.turn_backwards()
             else:
+                controller.turn_left()
+            if controller.laser_minimum < 0.6:
                 avoiding_trap = False
         rospy.sleep(0.5)
 
