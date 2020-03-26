@@ -28,6 +28,10 @@ class Controller:
 
         self.green_square_found = False
         self.red_square_found = False
+        self.blue_square_found = False
+
+        self.blue_mask_left = []
+        self.blue_mask_right = []
 
         self.__cv_bridge = CvBridge()
         self.__camera_subscriber = rospy.Subscriber("camera/rgb/image_raw", Image, self.camera_callback)
@@ -55,9 +59,10 @@ class Controller:
 
         green_mask = inRange(cv_image[:, [100, 400]], (1, 130, 1), (1, 160, 1))
         red_mask = inRange(cv_image[:][400:420], (1, 1, 130), (1, 1, 160))
+        blue_mask = inRange(cv_image, (120, 20, 20), (130, 30, 30))
 
-        imshow("col", cv_image[:, [0, 400]])
-        imshow("main", cv_image)
+        self.blue_mask_left = blue_mask[:, :320]
+        self.blue_mask_right = blue_mask[:, 320:]
 
         if np.in1d(green_mask, 255, assume_unique=True).any():
             self.green_square_found = True
@@ -68,6 +73,11 @@ class Controller:
             self.red_square_found = True
         else:
             self.red_square_found = False
+
+        if np.in1d(blue_mask, 255, assume_unique=True).any():
+            self.blue_square_found = True
+        else:
+            self.blue_square_found = False
 
         waitKey(1)
     
@@ -96,19 +106,24 @@ class Controller:
         self.__twist.linear.x = 0
         self.__twist_publisher.publish(self.__twist)
 
-    def drift_right(self):
+    def drift_left(self):
         self.__twist.linear.x = 0.2
         self.__twist.angular.z = 0.25
         self.__twist_publisher.publish(self.__twist)
 
-    def turn_right_backwards(self):
-        self.__twist.linear.x = 0
-        self.__twist.angular.z = -0.5
+    def drift_right(self):
+        self.__twist.linear.x = 0.2
+        self.__twist.angular.z = -0.25
         self.__twist_publisher.publish(self.__twist)
 
     def turn_left_backwards(self):
         self.__twist.linear.x = 0
         self.__twist.angular.z = 0.5
+        self.__twist_publisher.publish(self.__twist)
+
+    def turn_right_backwards(self):
+        self.__twist.linear.x = 0
+        self.__twist.angular.z = -0.5
         self.__twist_publisher.publish(self.__twist)
 
     def run(self):
