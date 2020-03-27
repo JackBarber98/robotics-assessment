@@ -172,28 +172,30 @@ class Controller:
         self.__twist_publisher.publish(self.__twist)
 
     def turn_right(self):
+
+        """ Publishes twist data that will be used to make the robot turn right with an 
+        angular velocity of 0.5 radians per second. """
+
         self.__twist.angular.z = -0.5
         self.__twist.linear.x = 0
         self.__twist_publisher.publish(self.__twist)
 
     def drift_left(self):
+
+        """ Publishes twist data that will be used to navigate the robot forwards with a slight 
+        leftwards drift of 0.25 r/s. """
+
         self.__twist.linear.x = 0.2
         self.__twist.angular.z = 0.25
         self.__twist_publisher.publish(self.__twist)
 
     def drift_right(self):
+
+        """ Publishes twist data that will be used to navigate the robot forwards with a slight 
+        rightwards drift of 0.25 r/s. """
+
         self.__twist.linear.x = 0.2
         self.__twist.angular.z = -0.25
-        self.__twist_publisher.publish(self.__twist)
-
-    def turn_left_backwards(self):
-        self.__twist.linear.x = 0
-        self.__twist.angular.z = 0.5
-        self.__twist_publisher.publish(self.__twist)
-
-    def turn_right_backwards(self):
-        self.__twist.linear.x = 0
-        self.__twist.angular.z = -0.5
         self.__twist_publisher.publish(self.__twist)
 
     def run(self):
