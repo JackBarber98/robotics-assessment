@@ -14,49 +14,73 @@ class MazeSolver():
         self.__controller = Controller()
 
         self.__following_wall = False
-        self.__door_detected = False
+        self.__gap_detected = False
         self.__turning_left = False
 
         self.__avoiding_trap = False
-        self.__going_to_exit = False
-        self.__moving_to_blue = False
+        self.__moving_to_exit = False
+        self.__moving_to_waypoint = False
 
     def run(self):
+
+        """ The main control loop for managing the inhibition and exhibition of the robot's behaviours 
+        for navigating the maze. """
+
         while not rospy.is_shutdown():
-            if not self.__avoiding_trap and not self.__going_to_exit and not self.__moving_to_blue:
+
+            # If a trap has been detected, the avoid trap behaviour should be started.
+            if self.__avoiding_trap and not self.__moving_to_exit and not self.__moving_to_waypoint:
+                self.avoid_trap()
+
+            # If the exit is found, the robot should move towards it.
+            elif self.__moving_to_exit and not self.__avoiding_trap and not self.__moving_to_waypoint:
+                self.go_to_exit()
+            elif self.__moving_to_waypoint and not self.__moving_to_exit and not self.__moving_to_exit:
+                self.go_to_waypoint()
+
+            # During "normal" behaviour when the flags indicating traps, exits, and waypoints are False, 
+            # the robot should attempt to follow the wall. This is the default behaviour.
+            else:
                 self.follow_wall()
                 self.identify_squares()
 
-            elif self.__avoiding_trap and not self.__going_to_exit and not self.__moving_to_blue:
-                self.avoid_trap()
-
-            elif self.__going_to_exit and not self.__avoiding_trap and not self.__moving_to_blue:
-                self.go_to_exit()
-            else:
-                self.go_to_waypoint()
-
             rospy.sleep(0.5)
 
+    def move_to_most_open_space(self):
+
+        """ Used to make the robot move towards the most open space when turning away from a wall. """
+
+        # The "turning left" variable is used to prevent the robot getting stuck in corners.
+        if self.__controller.left_laser_sum >= self.__controller.right_laser_sum or self.__turning_left:
+            self.__controller.turn_right()
+            self.__turning_left = True
+        else:
+            self.__controller.turn_left()
+
     def follow_wall(self):
-        if self.__controller.laser_minimum < 0.5 and not self.__door_detected:
-            if not self.__door_detected:
+
+        """ Defines a behaviour that allows the robot to identify, move towards, and follow the maze 
+        wall. If the robot's Kinect detects something less than 0.5m away, it turns to be parallel to 
+        the wall and exits this behaviour. If a potential gap in the maze is found, the robot moves 
+        forwards with a leftwards bias to attempt to move through / close to it. """
+
+        if self.__controller.laser_minimum < 0.5 and not self.__gap_detected:
+            if not self.__gap_detected:
                 self.__following_wall = True
                 self.__controller.stop()
-                if self.__controller.left_laser_sum >= self.__controller.right_laser_sum or self.__turning_left:
-                    self.__controller.turn_right()
-                    self.__turning_left = True
-                else:
-                    self.__controller.turn_left()
+
+                self.move_to_most_open_space()
         else: 
             self.__turning_left = False
             if self.__following_wall:
                 if self.__controller.laser_data[0] >= 1.2:
-                    self.__door_detected = True
+                    self.__gap_detected = True
                     self.__following_wall = False
-            if self.__door_detected:
+
+            if self.__gap_detected:
                 if self.__controller.laser_minimum < 0.6:
                     self.__controller.stop()
-                    self.__door_detected = False
+                    self.__gap_detected = False
                 else:
                     self.__controller.drift_left()
             else:
@@ -66,12 +90,17 @@ class MazeSolver():
         if self.__controller.red_square_found:
             self.__avoiding_trap = True
         if self.__controller.green_square_found:
-            self.__going_to_exit = True
+            self.__moving_to_exit = True
         if self.__controller.blue_square_found:
-            self.__moving_to_blue = True
+            self.__moving_to_waypoint = True
 
     def avoid_trap(self):
-        print("AVOIDING TRAP")
+
+        """ A behaviour whereby the robot turns away from a trap / red square until it is 
+        facing away from both the trap and any walls. """
+
+        # The robot is designed to turn towards the most "open" space it can see. The direction of 
+        # movement cannot be changed once it starts to prevent the robot getting stuck. 
         if self.__controller.left_laser_sum >= self.__controller.right_laser_sum or self.__turning_left:
             self.__controller.turn_left()
             self.__turning_left = True
@@ -81,17 +110,26 @@ class MazeSolver():
         if self.__controller.laser_minimum > 0.5 and not self.__controller.red_square_found:
             self.__avoiding_trap = False
             self.__turning_left = False
-            print("I AVOIDED THE TRAP!")
 
     def go_to_exit(self):
+
+        """ The robot will move towards the exit when sighted until a wall is detected in front 
+        of it; at this point the robot stops moving and navigation is complete. """
+
         if self.__controller.green_square_found:
             self.__controller.forwards()
         if self.__controller.laser_minimum < 0.5:
-            self.__going_to_exit = False
+            self.__moving_to_exit = False
         if not self.__controller.green_square_found:
             print("I FOUND THE EXIT")
 
     def go_to_waypoint(self):
+
+        """ This behaviour makes the robot navigate towards blue waypoints by moving forwards with either 
+        a left or right bias depending on which side of the input image contains the most blue pixels. Once 
+        the waypoint is less than 0.5m away, the robot turns to face the most open space parallel 
+        to the wall and exits the behaviour. """
+
         if self.__controller.blue_square_found:
             left_blue_pixel_count = np.count_nonzero(self.__controller.blue_mask_left==255)
             right_blue_pixel_count = np.count_nonzero(self.__controller.blue_mask_right==255)
@@ -101,16 +139,12 @@ class MazeSolver():
             else:
                 self.__controller.drift_right()
         else:
-           self.__moving_to_blue = False
+           self.__moving_to_waypoint = False
 
         if self.__controller.laser_minimum < 0.5:
             self.__controller.stop()
-            if self.__controller.left_laser_sum >= self.__controller.right_laser_sum or self.__turning_left:
-                self.__controller.turn_right()
-                self.__turning_left = True
-            elif not self.__turning_left:
-                self.__controller.turn_left()
-            self.__moving_to_blue = False
+            self.move_to_most_open_space()
+            self.__moving_to_waypoint = False
 
 maze_solver = MazeSolver()
 maze_solver.run()

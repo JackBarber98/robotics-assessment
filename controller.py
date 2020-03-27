@@ -45,7 +45,7 @@ class Controller:
         laser_data (LaserScan): The raw data recieved from the robot's Kinect infrared laser sensor.
         
         """
-        print(type(laser_data))
+
         laser_data = laser_data.ranges
 
         try:
@@ -88,8 +88,6 @@ class Controller:
         cv_image (numpy.ndarray): A 3D array containing BGR pixel data from the robot's camera. 
         
         """
-
-        print(type(cv_image))
 
         green_mask = inRange(cv_image[:, [100, 400]], (1, 130, 1), (1, 160, 1))
 
@@ -197,6 +195,3 @@ class Controller:
         self.__twist.linear.x = 0.2
         self.__twist.angular.z = -0.25
         self.__twist_publisher.publish(self.__twist)
-
-    def run(self):
-        rospy.spin()
