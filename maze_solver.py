@@ -1,4 +1,5 @@
 import numpy as np 
+import matplotlib.pyplot as plt
 
 import rospy
 from geometry_msgs.msg import Twist
@@ -20,6 +21,26 @@ class MazeSolver():
         self.__avoiding_trap = False
         self.__moving_to_exit = False
         self.__moving_to_waypoint = False
+
+        
+        plt.ion()
+
+        self.__fig = plt.figure()
+        self.__ax = self.__fig.add_subplot(111)
+
+        plt.ylim(0, 6)
+
+    def plot_laser_data(self):
+
+        """ Plots the Kinect / laser scanner data published on std_msgs/LaserScan, updating 
+        in real-time. """
+
+        self.__ax.clear()
+        self.__ax.set_title("Kinect Distances")
+        self.__ax.set_xlabel("Laser Index")
+        self.__ax.set_ylabel("Distance (meters)")
+        self.__ax.plot(self.__controller.laser_data)
+        self.__fig.canvas.draw()
 
     def run(self):
 
@@ -44,7 +65,10 @@ class MazeSolver():
                 self.follow_wall()
                 self.identify_squares()
 
+            self.plot_laser_data()
+
             rospy.sleep(0.5)
+        plt.show(block=True)
 
     def move_to_most_open_space(self):
 

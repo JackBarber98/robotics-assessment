@@ -1,5 +1,5 @@
 import rospy
-import numpy as np 
+import numpy as np
 
 from sensor_msgs.msg import LaserScan, Image
 from geometry_msgs.msg import Twist
@@ -48,6 +48,8 @@ class Controller:
 
         laser_data = laser_data.ranges
 
+        # When the program starts there may be no laser values in the incoming data, so the 
+        # NaN values are replaced with zeros until the actual is recieved.
         try:
             np.nanargmax(laser_data)
         except:
