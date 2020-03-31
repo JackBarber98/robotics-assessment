@@ -92,7 +92,7 @@ class MazeSolver():
                 self.__following_wall = True
                 self.__controller.stop()
 
-                self.move_to_most_open_space()
+                self.__move_to_most_open_space()
         else: 
             self.__turning_left = False
             if self.__following_wall:
