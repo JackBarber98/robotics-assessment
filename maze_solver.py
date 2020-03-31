@@ -22,18 +22,17 @@ class MazeSolver():
         self.__moving_to_exit = False
         self.__moving_to_waypoint = False
 
-        
+        # Creates an empty plot with a maximum y-value of 6.
         plt.ion()
-
         self.__fig = plt.figure()
         self.__ax = self.__fig.add_subplot(111)
-
         plt.ylim(0, 6)
 
     def plot_laser_data(self):
 
         """ Plots the Kinect / laser scanner data published on std_msgs/LaserScan, updating 
-        in real-time. """
+        in real-time. This isn't required to make the robot navigate the maze - it's just 
+        interesting to look at! """
 
         self.__ax.clear()
         self.__ax.set_title("Kinect Distances")
@@ -51,26 +50,26 @@ class MazeSolver():
 
             # If a trap has been detected, the avoid trap behaviour should be started.
             if self.__avoiding_trap and not self.__moving_to_exit and not self.__moving_to_waypoint:
-                self.avoid_trap()
+                self.__avoid_trap()
 
             # If the exit is found, the robot should move towards it.
             elif self.__moving_to_exit and not self.__avoiding_trap and not self.__moving_to_waypoint:
-                self.go_to_exit()
+                self.__go_to_exit()
             elif self.__moving_to_waypoint and not self.__moving_to_exit and not self.__moving_to_exit:
-                self.go_to_waypoint()
+                self.__go_to_waypoint()
 
             # During "normal" behaviour when the flags indicating traps, exits, and waypoints are False, 
             # the robot should attempt to follow the wall. This is the default behaviour.
             else:
-                self.follow_wall()
-                self.identify_squares()
+                self.__follow_wall()
+                self.__identify_squares()
 
-            self.plot_laser_data()
+            self.__plot_laser_data()
 
             rospy.sleep(0.5)
         plt.show(block=True)
 
-    def move_to_most_open_space(self):
+    def __move_to_most_open_space(self):
 
         """ Used to make the robot move towards the most open space when turning away from a wall. """
 
@@ -81,7 +80,7 @@ class MazeSolver():
         else:
             self.__controller.turn_left()
 
-    def follow_wall(self):
+    def __follow_wall(self):
 
         """ Defines a behaviour that allows the robot to identify, move towards, and follow the maze 
         wall. If the robot's Kinect detects something less than 0.5m away, it turns to be parallel to 
@@ -110,15 +109,21 @@ class MazeSolver():
             else:
                 self.__controller.forwards()
 
-    def identify_squares(self):
+    def __identify_squares(self):
+
+        """ Checks whether the robot has seen any traps, waypoints, or the exit and adjusts the
+        appropriate flags as required. """
+
         if self.__controller.red_square_found:
             self.__avoiding_trap = True
+            
         if self.__controller.green_square_found:
             self.__moving_to_exit = True
+
         if self.__controller.blue_square_found:
             self.__moving_to_waypoint = True
 
-    def avoid_trap(self):
+    def __avoid_trap(self):
 
         """ A behaviour whereby the robot turns away from a trap / red square until it is 
         facing away from both the trap and any walls. """
@@ -135,19 +140,21 @@ class MazeSolver():
             self.__avoiding_trap = False
             self.__turning_left = False
 
-    def go_to_exit(self):
+    def __go_to_exit(self):
 
         """ The robot will move towards the exit when sighted until a wall is detected in front 
         of it; at this point the robot stops moving and navigation is complete. """
 
         if self.__controller.green_square_found:
             self.__controller.forwards()
+
         if self.__controller.laser_minimum < 0.5:
             self.__moving_to_exit = False
+
         if not self.__controller.green_square_found:
             print("I FOUND THE EXIT")
 
-    def go_to_waypoint(self):
+    def __go_to_waypoint(self):
 
         """ This behaviour makes the robot navigate towards blue waypoints by moving forwards with either 
         a left or right bias depending on which side of the input image contains the most blue pixels. Once 
@@ -167,8 +174,10 @@ class MazeSolver():
 
         if self.__controller.laser_minimum < 0.5:
             self.__controller.stop()
-            self.move_to_most_open_space()
+            self.__move_to_most_open_space()
+
             self.__moving_to_waypoint = False
 
-maze_solver = MazeSolver()
-maze_solver.run()
+if __name__ == "__main__":
+    maze_solver = MazeSolver()
+    maze_solver.run()
