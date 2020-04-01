@@ -1,3 +1,5 @@
+# Jack Barber (17633053)
+
 import rospy
 import numpy as np
 
