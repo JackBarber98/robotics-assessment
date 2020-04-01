@@ -75,6 +75,8 @@ class Controller:
 
         cv_image = self.__cv_bridge.imgmsg_to_cv2(camera_data, "bgr8")
 
+        imshow("RoboCam", cv_image)
+
         self.__set_green_square_flag(cv_image)
         self.__set_red_square_flag(cv_image)
         self.__set_blue_square_flag(cv_image)
@@ -101,7 +103,7 @@ class Controller:
     def __set_red_square_flag(self, cv_image):
 
         """ Changes the value of the red_square_found flag depending on whether 
-        any red pixels can be found in the robot's field of view. 
+        any red pixels can be found in the lower section of robot's field of view. 
         
         Parameters:
         cv_image (numpy.ndarray): A 3D array containing BGR pixel data from the robot's camera. 
@@ -139,7 +141,7 @@ class Controller:
     def forwards(self):
 
         """ Publishes twist data that will be used to make the robot move forward. A slight
-        leftward drift is applied to encourage the robot to follow the left-hand wall of the maze. """
+        leftward drift is applied to encourage the robot to find gaps in the wall. """
 
         self.__twist.angular.z = 0.05
         self.__twist.linear.x = 0.2

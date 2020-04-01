@@ -17,6 +17,7 @@ class MazeSolver():
         self.__following_wall = False
         self.__gap_detected = False
         self.__turning_left = False
+        self.__turning_right = False
 
         self.__avoiding_trap = False
         self.__moving_to_exit = False
@@ -74,18 +75,19 @@ class MazeSolver():
         """ Used to make the robot move towards the most open space when turning away from a wall. """
 
         # The "turning left" variable is used to prevent the robot getting stuck in corners.
-        if self.__controller.left_laser_sum >= self.__controller.right_laser_sum or self.__turning_left:
-            self.__controller.turn_right()
-            self.__turning_left = True
-        else:
+        if self.__controller.left_laser_sum <= self.__controller.right_laser_sum or self.__turning_left:
             self.__controller.turn_left()
+            self.__turning_left = True
+        elif self.__controller.left_laser_sum > self.__controller.right_laser_sum or self.__turning_right:
+            self.__controller.turn_right()
+            self.__turning_right = True
 
     def __follow_wall(self):
 
         """ Defines a behaviour that allows the robot to identify, move towards, and follow the maze 
         wall. If the robot's Kinect detects something less than 0.5m away, it turns to be parallel to 
         the wall and exits this behaviour. If a potential gap in the maze is found, the robot moves 
-        forwards with a leftwards bias to attempt to move through / close to it. """
+        forwards with a rightwards bias to attempt to move through / close to it. """
 
         if self.__controller.laser_minimum < 0.5 and not self.__gap_detected:
             if not self.__gap_detected:
@@ -95,6 +97,7 @@ class MazeSolver():
                 self.__move_to_most_open_space()
         else: 
             self.__turning_left = False
+            self.__turning_right = False
             if self.__following_wall:
                 if self.__controller.laser_data[0] >= 1.2:
                     self.__gap_detected = True
@@ -105,7 +108,7 @@ class MazeSolver():
                     self.__controller.stop()
                     self.__gap_detected = False
                 else:
-                    self.__controller.drift_left()
+                    self.__controller.drift_right()
             else:
                 self.__controller.forwards()
 
@@ -138,12 +141,13 @@ class MazeSolver():
 
         if self.__controller.laser_minimum > 0.5 and not self.__controller.red_square_found:
             self.__avoiding_trap = False
-            self.__turning_left = False
 
     def __go_to_exit(self):
 
         """ The robot will move towards the exit when sighted until a wall is detected in front 
         of it; at this point the robot stops moving and navigation is complete. """
+
+        print("GOING TO EXIT")
 
         if self.__controller.green_square_found:
             self.__controller.forwards()
