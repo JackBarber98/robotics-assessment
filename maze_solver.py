@@ -42,7 +42,7 @@ class MazeSolver():
             if self.__avoiding_trap and not self.__moving_to_exit and not self.__moving_to_waypoint:
                 self.__avoid_trap()
 
-            # If the exit is found, the robot should move towards it.
+            # If the exit or a waypoint is found, the robot should move towards it.
             elif self.__moving_to_exit and not self.__avoiding_trap and not self.__moving_to_waypoint:
                 self.__go_to_exit()
             elif self.__moving_to_waypoint and not self.__moving_to_exit and not self.__moving_to_exit:
@@ -57,6 +57,7 @@ class MazeSolver():
             self.__plot_laser_data()
 
             rospy.sleep(0.5)
+
         plt.show(block=True)
 
     def __plot_laser_data(self):
@@ -87,9 +88,13 @@ class MazeSolver():
     def __follow_wall(self):
 
         """ Defines a behaviour that allows the robot to identify, move towards, and follow the maze 
-        wall. If the robot's Kinect detects something less than 0.5m away, it turns to be parallel to 
-        the wall and exits this behaviour. If a potential gap in the maze is found, the robot moves 
-        forwards with a rightwards bias to attempt to move through / close to it. """
+        wall. 
+        
+        If the robot detects a maze wall less than 0.5m away, it stops and turns to face most open space. 
+        At this point the robot should follow the wall. If following the wall and a distance greater than 1.2m is 
+        seen to the bot's left, it must now attempt to navigate the gap and is no longer following the wall.
+        If the robot is navigating a gap, it drifts right until a distance less than 0.6m is detected.
+        If a gap has not been detected, the bot navigates forwards (this is the default behaviour of the robot). """
 
         if self.__controller.laser_minimum < 0.5 and not self.__gap_detected:
             if not self.__gap_detected:
@@ -148,8 +153,6 @@ class MazeSolver():
 
         """ The robot will move towards the exit when sighted until a wall is detected in front 
         of it; at this point the robot stops moving and navigation is complete. """
-
-        print("GOING TO EXIT")
 
         if self.__controller.green_square_found:
             self.__controller.forwards()
